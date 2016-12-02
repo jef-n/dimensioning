@@ -11,7 +11,7 @@ name=Dimensioning
 qgisMinimumVersion=2.0
 qgisMaximumVersion=2.99
 description=Plugin for dimensioning.
-version=0.0.2
+version=0.0.4
 
 # end of mandatory metadata
 
@@ -23,9 +23,9 @@ version=0.0.2
 # tags are comma separated with spaces allowed
 tags=cad,digitizing,dimensioning,length
 
-homepage=https://github.com/kalxas/dimensioning
-tracker=https://github.com/kalxas/dimensioning/issues
-repository=https://github.com/kalxas/dimensioning.git
+homepage=https://github.com/jef-n/dimensioning
+tracker=https://github.com/jef-n/dimensioning/issues
+repository=https://github.com/jef-n/dimensioning.git
 icon=icons/dimensioning.png
 # experimental flag
 experimental=False
@@ -34,6 +34,5 @@ experimental=False
 deprecated=False
 
 # Author contact information
-author=Stefan ZIegler
+author=Stefan Ziegler
 email=edi.gonzales@gmail.com
-

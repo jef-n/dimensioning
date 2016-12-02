@@ -1,14 +1,18 @@
 from PyQt4.QtCore import SIGNAL, QObject
 from PyQt4.QtGui import QIcon, QAction, QMessageBox
-from qgis.core import QgsPoint, QgsGeometry
+from qgis.core import QgsPoint, QgsGeometry, QgsMessageLog
 
-import tools.utils
+from tools import utils
 
 from tools.vertexfindertool import VertexFinderTool
 from tools.dimensioninggui import DimensioningGui
 from tools.rectangularpoint import RectangularPoint
 
 import resources
+
+
+def logMessage(s):
+    QgsMessageLog.logMessage(s, "dimensioning")
 
 
 class Dimensioning:
@@ -51,7 +55,7 @@ class Dimensioning:
         QObject.connect(self.tool, SIGNAL("vertexFound(PyQt_PyObject)"), self.storePoints)
 
     def storePoints(self, result):
-        print(result)
+        logMessage("store:{}".format(result))
         self.p1 = result[0]
         self.p2 = result[1]
 
@@ -59,7 +63,6 @@ class Dimensioning:
         if self.p1 is None or self.p2 is None:
             QMessageBox.information(None, "Cancel", "No points selected.")
         else:
-            print("showDialog")
             self.ctrl = DimensioningGui(self.iface.mainWindow())
             self.ctrl.initGui()
             self.ctrl.show()
@@ -69,10 +72,7 @@ class Dimensioning:
             QObject.connect(self.ctrl, SIGNAL("unsetTool()"), self.unsetTool)
 
     def calculateDimensioning(self, length, startOffset, endOffset, layer_id, invert):
-        print(length)
-        print(startOffset)
-        print(endOffset)
-        print(invert)
+        logMessage(u"length={} startOffset={} endOffset={} invert={}".format(length, startOffset, endOffset, invert))
 
         pt1 = QgsPoint()
         pt1.setX(self.p1.x())
@@ -83,7 +83,7 @@ class Dimensioning:
 
         # Distanz zwischen beiden Punkten
         dist = pt1.sqrDist(pt2)**0.5
-        print(dist)
+        logMessage(u"dist={}".format(dist))
 
         # Hilfslinien berechnen
         if length != 0:
@@ -113,26 +113,26 @@ class Dimensioning:
                 mc.unsetMapTool(self.tool)
                 return
             else:
-                f = tools.utils.createHelpFeature(QgsGeometry.fromPolyline([pt1HelperStart, pt1HelperEnd]), 0, layer_id)
-                tools.utils.addGeometryToDimensionLayer(f, "help")
+                f = utils.createHelpFeature(QgsGeometry.fromPolyline([pt1HelperStart, pt1HelperEnd]), 0, layer_id)
+                utils.addGeometryToDimensionLayer(f, "help", self.canvas)
 
-                f = tools.utils.createHelpFeature(QgsGeometry.fromPolyline([pt2HelperStart, pt2HelperEnd]), 0, layer_id)
-                tools.utils.addGeometryToDimensionLayer(f, "help")
+                f = utils.createHelpFeature(QgsGeometry.fromPolyline([pt2HelperStart, pt2HelperEnd]), 0, layer_id)
+                utils.addGeometryToDimensionLayer(f, "help", self.canvas)
 
                 self.canvas.refresh()
 
         # Hauptlinie berechnen
         # StartOffset wird beruecksichtigt, EndOffset ignoriert.
         if startOffset == 0 and length == 0:
-            f = tools.utils.createMainFeature(QgsGeometry.fromPolyline([pt1, pt2]), 202, round(float(dist), 3))
-            tools.utils.addGeometryToDimensionLayer(f, "main")
+            f = utils.createMainFeature(QgsGeometry.fromPolyline([pt1, pt2]), 202, round(float(dist), 3))
+            utils.addGeometryToDimensionLayer(f, "main", self.canvas)
 
         else:
             ptMainStart = RectangularPoint.point(pt1, pt2, 0, startOffset + length - endOffset, invert)
             ptMainEnd = RectangularPoint.point(pt1, pt2, dist, startOffset + length - endOffset, invert)
 
-            f = tools.utils.createMainFeature(QgsGeometry.fromPolyline([ptMainStart, ptMainEnd]), layer_id, round(float(dist), 3))
-            tools.utils.addGeometryToDimensionLayer(f, "main")
+            f = utils.createMainFeature(QgsGeometry.fromPolyline([ptMainStart, ptMainEnd]), layer_id, round(float(dist), 3))
+            utils.addGeometryToDimensionLayer(f, "main", self.canvas)
 
         self.p1 = pt1
         self.p2 = pt2
@@ -148,9 +148,11 @@ class Dimensioning:
         self.p2 = None
 
     def unload(self):
-        print("unload plugin dimensioning")
+        logMessage("unload plugin dimensioning")
         self.iface.removePluginMenu(self.action_select2vertex.tr("Dimensioning"), self.action_select2vertex)
         self.iface.removeToolBarIcon(self.action_select2vertex)
 
         self.iface.removePluginMenu(self.action_dimensioning.tr("Dimensioning"), self.action_dimensioning)
         self.iface.removeToolBarIcon(self.action_dimensioning)
+
+        self.toolBar.deleteLater()
